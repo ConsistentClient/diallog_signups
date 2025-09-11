@@ -27,7 +27,7 @@ if ($_SESSION["user"]) {
 	$from   = $_GET['from']  ?? '';
 
 	// 3. Build query dynamically
-	$sql = "SELECT s.* FROM signup s INNER JOIN ( select email, MAX( LastUpdated ) AS max_updated from signup "
+	$sql = "SELECT s.* FROM signup s INNER JOIN ( SELECT email, MAX( LastUpdated ) AS max_updated FROM signup "
 	;
 	$params = [];
 	$types  = "";
@@ -36,12 +36,12 @@ if ($_SESSION["user"]) {
 		//$sql .= " AND LastUpdated >= '$startDate' ";
 		$sql .= " WHERE LastUpdated BETWEEN $start AND $end AND ";
 	}
-
 	$sql .= " status < 100 GROUP BY email) latest ON s.email = latest.email AND u.LastUpdated = latest.max_updated LIMIT 1000;";
 
 	$stmt = $mysqli->prepare($sql);
 	if ($stmt == false) {
 		error_log(" Error in sql $sql");
+		error_log( "Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error );
 		exit(0);
 	}
 	if ($params) {
