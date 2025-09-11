@@ -27,7 +27,7 @@ if ($_SESSION["user"]) {
 	$from   = $_GET['from']  ?? '';
 
 	// 3. Build query dynamically
-	$sql = "SELECT s.* FROM signup s INNER JOIN ( SELECT email, MAX( LastUpdated ) AS max_updated FROM signup "
+	$sql = "SELECT s.* FROM signup s INNER JOIN (  SELECT JSON_UNQUOTE(JSON_EXTRACT(user_data, '$.email')) AS email, MAX( LastUpdated ) AS max_updated FROM signup "
 	;
 	$params = [];
 	$types  = "";
