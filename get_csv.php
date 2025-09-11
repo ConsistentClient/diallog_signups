@@ -43,10 +43,7 @@ if ($_SESSION["user"]) {
 
 	// Add date filter
 	if ($start && $end) {
-		$sql .= " AND LastUpdated BETWEEN ? AND ? ";
-		$params[] = $start;
-		$params[] = $end;
-		$types   .= "ss"; // assuming $start and $end are strings (like '2025-01-01 00:00:00')
+		$sql .= " AND LastUpdated BETWEEN $start AND $end ";
 	}
 
 	$sql .= "
