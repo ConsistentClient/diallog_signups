@@ -69,6 +69,9 @@ if ($_SESSION["user"]) {
 
 	$stmt->execute();
 	$result = $stmt->get_result();
+	if ($result === false) {
+		die("get_result() failed: (" . $stmt->errno . ") " . $stmt->error);
+	}
 
 	// 4. CSV headers
 	header('Content-Type: text/csv; charset=utf-8');
