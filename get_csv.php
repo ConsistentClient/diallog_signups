@@ -36,7 +36,7 @@ if ($_SESSION["user"]) {
 		//$sql .= " AND LastUpdated >= '$startDate' ";
 		$sql .= " WHERE LastUpdated BETWEEN $start AND $end AND ";
 	}
-	$sql .= " status < 100 GROUP BY email) latest ON s.email = latest.email AND u.LastUpdated = latest.max_updated LIMIT 1000;";
+	$sql .= " status < 100 GROUP BY email) latest ON JSON_UNQUOTE(JSON_EXTRACT(u.user_data, '$.email')) = latest.email AND u.LastUpdated = latest.max_updated LIMIT 1000;";
 
 	$stmt = $mysqli->prepare($sql);
 	if ($stmt == false) {
