@@ -35,7 +35,7 @@ if ($_SESSION["user"]) {
             JSON_UNQUOTE(JSON_EXTRACT(user_data, '$.email')) AS email,
             MAX(LastUpdated) AS max_updated
         FROM signup
-        WHERE status < 100
+        WHERE status < 100 AND JSON_VALID(user_data)
 ";
 
 	$params = [];
