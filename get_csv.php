@@ -1,7 +1,7 @@
 <?php
 
 session_start();
-if($_SESSION["user"]) {
+if ($_SESSION["user"]) {
 
 	include_once('connect.php');
 	include_once('helper.php');
@@ -21,28 +21,27 @@ if($_SESSION["user"]) {
 		die("Missing start or end");
 	}
 
-
 	// 2. Get filters from GET
 	$q      = $_GET['q']     ?? '';
-	$status = $_GET['status']?? '';
+	$status = $_GET['status'] ?? '';
 	$from   = $_GET['from']  ?? '';
 
 	// 3. Build query dynamically
-	$sql = "SELECT * FROM signup WHERE status < 100"; 
+	$sql = "SELECT s.* FROM signup s INNER JOIN ( select email, MAX( LastUpdated ) AS max_updated from signup "
+	;
 	$params = [];
 	$types  = "";
 
-	if( $start ) {
-		$sql .= " AND LastUpdated >= '$startDate' ";
-	}
-	if( $end ) {
-		$sql .= " AND LastUpdated <= '$endDate' ";
+	if ($start && $end ) {
+		//$sql .= " AND LastUpdated >= '$startDate' ";
+		$sql .= " WHERE LastUpdated BETWEEN $start AND $end AND ";
 	}
 
-       	$sql .= " ORDER BY LastUpdated DESC LIMIT 10000;";
+	$sql .= " status < 100 GROUP BY email) latest ON s.email = latest.email AND u.LastUpdated = latest.max_updated LIMIT 1000;";
+
 	$stmt = $mysqli->prepare($sql);
-	if( $stmt == false ) {
-		error_log(" Error in sql $sql" );
+	if ($stmt == false) {
+		error_log(" Error in sql $sql");
 		exit(0);
 	}
 	if ($params) {
@@ -59,7 +58,7 @@ if($_SESSION["user"]) {
 	// 5. Output CSV
 	$output = fopen('php://output', 'w');
 
-	$fields = ['date', 'first_name', 'last_name', 'email', 'phone', 'street_number', 'street_name', 'postal_code', 'ccd', 'status', 'selected_modem_plan_name', 'selected_Internet Plan_plan', 'selected_Internet Plan_plan_name' ];
+	$fields = ['date', 'first_name', 'last_name', 'email', 'phone', 'street_number', 'street_name', 'postal_code', 'ccd', 'status', 'selected_modem_plan_name', 'selected_Internet Plan_plan', 'selected_Internet Plan_plan_name'];
 	// header row
 	fputcsv($output, $fields);
 
@@ -68,27 +67,25 @@ if($_SESSION["user"]) {
 		$unique_id = $row['unique_id'];
 		$user_data = GetUserData($unique_id);
 
-		error_log( "$unique_id" );
+		error_log("$unique_id");
 		$line = [];
 		foreach ($fields as $f) {
-			if( $f == 'date' ) 
-			{
+			if ($f == 'date') {
 				$line['date'] = $row['LastUpdated'];
 				continue;
 			}
-			if( $f == 'ccd' ) 
-			{
-				if( isset( $user_data[$f] ) ) {
-					if (substr($user_data[$f], -2) === '==' ) {
-						$line['ccd'] = base64_decode( $user_data[$f] );
+			if ($f == 'ccd') {
+				if (isset($user_data[$f])) {
+					if (substr($user_data[$f], -2) === '==') {
+						$line['ccd'] = base64_decode($user_data[$f]);
 						continue;
 					}
 				}
 			}
-			if( isset( $user_data[$f] ) ) 
+			if (isset($user_data[$f]))
 				$line[$f] = $user_data[$f];
 			else
-				$line[$f] = ""; 
+				$line[$f] = "";
 		}
 
 		fputcsv($output, $line);
@@ -98,7 +95,4 @@ if($_SESSION["user"]) {
 	$stmt->close();
 	$mysqli->close();
 	exit;
-
-
 }
-
