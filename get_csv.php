@@ -27,21 +27,40 @@ if ($_SESSION["user"]) {
 	$from   = $_GET['from']  ?? '';
 
 	// 3. Build query dynamically
-	$sql = "SELECT s.* FROM signup s INNER JOIN (  SELECT JSON_UNQUOTE(JSON_EXTRACT(user_data, '$.email')) AS email, MAX( LastUpdated ) AS max_updated FROM signup "
-	;
+	$$sql = "
+    SELECT s.*
+    FROM signup s
+    INNER JOIN (
+        SELECT 
+            JSON_UNQUOTE(JSON_EXTRACT(user_data, '$.email')) AS email,
+            MAX(LastUpdated) AS max_updated
+        FROM signup
+        WHERE status < 100
+";
+
 	$params = [];
 	$types  = "";
 
-	if ($start && $end ) {
-		//$sql .= " AND LastUpdated >= '$startDate' ";
-		$sql .= " WHERE LastUpdated BETWEEN $start AND $end AND ";
+	// Add date filter
+	if ($start && $end) {
+		$sql .= " AND LastUpdated BETWEEN ? AND ? ";
+		$params[] = $start;
+		$params[] = $end;
+		$types   .= "ss"; // assuming $start and $end are strings (like '2025-01-01 00:00:00')
 	}
-	$sql .= " status < 100 GROUP BY JSON_UNQUOTE(JSON_EXTRACT(user_data, '$.email'))) latest ON JSON_UNQUOTE(JSON_EXTRACT(u.user_data, '$.email')) = latest.email AND u.LastUpdated = latest.max_updated LIMIT 1000;";
+
+	$sql .= "
+        GROUP BY JSON_UNQUOTE(JSON_EXTRACT(user_data, '$.email'))
+    ) latest
+      ON JSON_UNQUOTE(JSON_EXTRACT(s.user_data, '$.email')) = latest.email
+     AND s.LastUpdated = latest.max_updated
+    LIMIT 1000
+";
 
 	$stmt = $mysqli->prepare($sql);
 	if ($stmt == false) {
 		error_log(" Error in sql $sql");
-		error_log( "Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error );
+		error_log("Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error);
 		exit(0);
 	}
 	if ($params) {
