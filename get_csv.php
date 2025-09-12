@@ -53,8 +53,9 @@ if ($_SESSION["user"]) {
 		$user_data = GetUserData($unique_id);
 
 		$email = $user_data['email'];
-		if (!isset($latestPerEmail[$email]) || $row['LastUpdated'] > $latestPerEmail[$email]['LastUpdated']) {
-			$latestPerEmail[$email] = $row;
+		$user_data['date'] = $row['LastUpdated'];
+		if (!isset($latestPerEmail[$email]) || $row['LastUpdated'] > $latestPerEmail[$email]['date']) {
+			$latestPerEmail[$email] = $user_data;
 			$latestPerEmail[$email]['email'] = $email; // add email for convenience
 		}
 	}
@@ -68,10 +69,6 @@ if ($_SESSION["user"]) {
 	foreach( $users as $user_data) {
 		$line = [];
 		foreach ($fields as $f) {
-			if ($f == 'date') {
-				$line['date'] = $row['LastUpdated'];
-				continue;
-			}
 			if ($f == 'ccd') {
 				if (isset($user_data[$f])) {
 					if (substr($user_data[$f], -2) === '==') {
