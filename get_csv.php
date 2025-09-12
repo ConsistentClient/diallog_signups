@@ -26,70 +26,46 @@ if ($_SESSION["user"]) {
 	$status = $_GET['status'] ?? '';
 	$from   = $_GET['from']  ?? '';
 
-	// 3. Build query dynamically
-	$sql = "
-    SELECT s.*
-    FROM signup s
-    INNER JOIN (
-        SELECT 
-            JSON_UNQUOTE(JSON_EXTRACT(user_data, '$.email')) AS email,
-            MAX(LastUpdated) AS max_updated
-        FROM signup
-        WHERE status < 100 AND JSON_VALID(user_data)
-";
-
-	$params = [];
-	$types  = "";
-
-	// Add date filter
-	if ($start && $end) {
-		$sql .= " AND LastUpdated BETWEEN ? AND ? ";
-		$params[] = $start;
-		$params[] = $end;
-		$types   .= "ss"; // assuming $start and $end are strings (like '2025-01-01 00:00:00')
-	}
-
-	$sql .= "
-        GROUP BY JSON_UNQUOTE(JSON_EXTRACT(user_data, '$.email'))
-    ) latest
-      ON JSON_UNQUOTE(JSON_EXTRACT(s.user_data, '$.email')) = latest.email
-     AND s.LastUpdated = latest.max_updated
-    LIMIT 1000
-";
-
-	$stmt = $mysqli->prepare($sql);
-	if ($stmt == false) {
-		error_log(" Error in sql $sql");
-		error_log("Prepare failed: (" . $mysqli->errno . ") " . $mysqli->error);
-		exit(0);
-	}
-	if ($params) {
-		$stmt->bind_param($types, ...$params);
-	}
-
-	$stmt->execute();
-	$result = $stmt->get_result();
-	if ($result === false) {
-		die("get_result() failed: (" . $stmt->errno . ") " . $stmt->error);
-	}
 
 	// 4. CSV headers
 	header('Content-Type: text/csv; charset=utf-8');
 	header('Content-Disposition: attachment; filename="export.csv"');
 
-	// 5. Output CSV
-	$output = fopen('php://output', 'w');
+	
 
-	$fields = ['date', 'first_name', 'last_name', 'email', 'phone', 'street_number', 'street_name', 'postal_code', 'ccd', 'status', 'selected_modem_plan_name', 'selected_Internet Plan_plan', 'selected_Internet Plan_plan_name'];
-	// header row
-	fputcsv($output, $fields);
+	// 3. Build query dynamically
+	$stmt = $mysqli->prepare("
+    SELECT s.*, s.LastUpdated
+    FROM signup s
+    WHERE s.LastUpdated BETWEEN ? AND ?
+      AND s.status < 100
+    LIMIT 10000
+");
+	$stmt->bind_param("ss", $start, $end);
+	$stmt->execute();
+	$result = $stmt->get_result();
 
-	// data rows
+	$users = [];
+	$latestPerEmail = [];
+
 	while ($row = $result->fetch_assoc()) {
 		$unique_id = $row['unique_id'];
 		$user_data = GetUserData($unique_id);
 
-		error_log("$unique_id");
+		$email = $user_data['email'];
+		if (!isset($latestPerEmail[$email]) || $row['LastUpdated'] > $latestPerEmail[$email]['LastUpdated']) {
+			$latestPerEmail[$email] = $row;
+			$latestPerEmail[$email]['email'] = $email; // add email for convenience
+		}
+	}
+
+	$users = array_slice($latestPerEmail, 0, 1000);
+	
+	// 5. Output CSV
+	$output = fopen('php://output', 'w');
+	$fields = ['date', 'first_name', 'last_name', 'email', 'phone', 'street_number', 'street_name', 'postal_code', 'ccd', 'status', 'selected_modem_plan_name', 'selected_Internet Plan_plan', 'selected_Internet Plan_plan_name'];
+	fputcsv($output, $fields);
+	foreach( $users as $user_data)
 		$line = [];
 		foreach ($fields as $f) {
 			if ($f == 'date') {
@@ -104,6 +80,7 @@ if ($_SESSION["user"]) {
 					}
 				}
 			}
+
 			if (isset($user_data[$f]))
 				$line[$f] = $user_data[$f];
 			else
