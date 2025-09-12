@@ -52,9 +52,13 @@ if ($_SESSION["user"]) {
 		$unique_id = $row['unique_id'];
 		$user_data = GetUserData($unique_id);
 
-		$email = $user_data['email'];
+		if( isset( $user_data['email']) == false )
+			continue;
+		
 		$user_data['date'] = $row['LastUpdated'];
 		$user_data['email'] = strtolower(trim($user_data['email']));
+		$email = $user_data['email'];
+
 		if (!isset($latestPerEmail[$email]) || $row['LastUpdated'] > $latestPerEmail[$email]['date']) {
 			$latestPerEmail[$email] = $user_data;
 			$latestPerEmail[$email]['email'] = $email; // add email for convenience
