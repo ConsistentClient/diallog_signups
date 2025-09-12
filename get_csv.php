@@ -60,12 +60,12 @@ if ($_SESSION["user"]) {
 	}
 
 	$users = array_slice($latestPerEmail, 0, 1000);
-	
+
 	// 5. Output CSV
 	$output = fopen('php://output', 'w');
 	$fields = ['date', 'first_name', 'last_name', 'email', 'phone', 'street_number', 'street_name', 'postal_code', 'ccd', 'status', 'selected_modem_plan_name', 'selected_Internet Plan_plan', 'selected_Internet Plan_plan_name'];
 	fputcsv($output, $fields);
-	foreach( $users as $user_data)
+	foreach( $users as $user_data) {
 		$line = [];
 		foreach ($fields as $f) {
 			if ($f == 'date') {
