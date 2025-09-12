@@ -54,7 +54,7 @@ if ($_SESSION["user"]) {
 
 		$email = $user_data['email'];
 		$user_data['date'] = $row['LastUpdated'];
-		$user_data['email'] = strtolower(trim($row['email']));
+		$user_data['email'] = strtolower(trim($user_data['email']));
 		if (!isset($latestPerEmail[$email]) || $row['LastUpdated'] > $latestPerEmail[$email]['date']) {
 			$latestPerEmail[$email] = $user_data;
 			$latestPerEmail[$email]['email'] = $email; // add email for convenience
