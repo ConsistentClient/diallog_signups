@@ -76,33 +76,42 @@ if ($_SESSION["user"]) {
 		$unique_id = $row['unique_id'];
 		$user_data = GetUserData($unique_id);
 
-		if (empty($user_data['email']) || empty($user_data['postal_code'])) {
+		// Require email, skip if missing
+		if (empty($user_data['email'])) {
 			continue;
 		}
 
 		$user_data['email'] = strtolower(trim($user_data['email']));
-		$user_data['postal_code'] = trim($user_data['postal_code']);
+		$user_data['postal_code'] = isset($user_data['postal_code']) ? trim($user_data['postal_code']) : '';
 		$user_data['date'] = $row['LastUpdated'];
 		$user_data['status'] = $row['status'];
 
 		$email = $user_data['email'];
 		$postal = $user_data['postal_code'];
 
-		// --- Check email uniqueness ---
-		if (!isset($latestPerEmail[$email]) || strtotime($row['LastUpdated']) > strtotime($latestPerEmail[$email]['date'])) {
+		// --- Always enforce uniqueness by email ---
+		if (
+			!isset($latestPerEmail[$email]) ||
+			strtotime($row['LastUpdated']) > strtotime($latestPerEmail[$email]['date'])
+		) {
 			$latestPerEmail[$email] = $user_data;
 		}
 
-		// --- Check postal code uniqueness ---
-		if (!isset($latestPerPostal[$postal]) || strtotime($row['LastUpdated']) > strtotime($latestPerPostal[$postal]['date'])) {
-			$latestPerPostal[$postal] = $user_data;
+		// --- Enforce uniqueness by postal code only if postal is not empty ---
+		if ($postal !== '') {
+			if (
+				!isset($latestPerPostal[$postal]) ||
+				strtotime($row['LastUpdated']) > strtotime($latestPerPostal[$postal]['date'])
+			) {
+				$latestPerPostal[$postal] = $user_data;
+			}
 		}
 	}
 
-	// Merge email-unique and postal-unique sets
+	// Merge results
 	$latestCombined = array_merge($latestPerEmail, $latestPerPostal);
 
-	// Remove duplicates (if the same record appears in both)
+	// Deduplicate (in case same record is in both lists)
 	$latestCombined = array_values(array_unique($latestCombined, SORT_REGULAR));
 
 	// Sort by date descending
@@ -112,7 +121,6 @@ if ($_SESSION["user"]) {
 
 	// Apply limit
 	$users = array_slice($latestCombined, 0, $limit);
-
 
 	// 5. Output CSV
 	$output = fopen('php://output', 'w');
