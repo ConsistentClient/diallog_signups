@@ -251,7 +251,7 @@ if($_SESSION["user"]) {
 		echo "<div class='cell'> Last Update </div><div class='cell'>First Name</div>";
 		echo "<div class='cell'> Last Name </div><div class='cell'> Email </div> <div class='cell'> CCD </div>";
 		echo "</div>";
-		$sql = "SELECT * FROM signup WHERE status < 100 ORDER BY LastUpdated DESC LIMIT 1000;";
+		$sql = "SELECT * FROM signup WHERE status < 100 ORDER BY LastUpdated DESC LIMIT 100;";
 		$res = $db->query( $sql );
 		while( $obj = $res->fetch_object() )  {
 			$id = $obj->id;
