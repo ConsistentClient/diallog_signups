@@ -10,20 +10,20 @@ if ($_SESSION["user"]) {
 
 	// Get the parameters from the query string
 	$start = $_GET['start'] ?? null;
-	$end   = $_GET['end']   ?? null;
+	$end = $_GET['end'] ?? null;
 
 	// Basic validation: make sure they look like dates
 	if ($start && $end) {
 		$startDate = date('Y-m-d', strtotime($start));
-		$endDate   = date('Y-m-d', strtotime($end));
+		$endDate = date('Y-m-d', strtotime($end));
 	} else {
 		die("Missing start or end");
 	}
 
 	// 2. Get filters from GET
-	$q      = $_GET['q']     ?? '';
+	$q = $_GET['q'] ?? '';
 	$status = $_GET['status'] ?? '';
-	$from   = $_GET['from']  ?? '';
+	$from = $_GET['from'] ?? '';
 	$limit = 10000;
 
 	// 4. CSV headers
@@ -37,12 +37,13 @@ if ($_SESSION["user"]) {
     WHERE s.LastUpdated BETWEEN ? AND ?
     LIMIT $limit
 ");
-//      AND s.status < 100
+	//      AND s.status < 100
 
 	$stmt->bind_param("ss", $start, $end);
 	$stmt->execute();
 	$result = $stmt->get_result();
 
+	/*
 	$users = [];
 	$latestPerEmail = [];
 
@@ -52,7 +53,7 @@ if ($_SESSION["user"]) {
 
 		if( isset( $user_data['email']) == false )
 			continue;
-		
+
 		$user_data['date'] = $row['LastUpdated'];
 		$user_data['status'] = $row['status'];
 
@@ -66,14 +67,60 @@ if ($_SESSION["user"]) {
 	}
 
 	$users = array_slice($latestPerEmail, 0, $limit);
+	*/
+
+	$latestPerEmail = [];
+	$latestPerPostal = [];
+
+	while ($row = $result->fetch_assoc()) {
+		$unique_id = $row['unique_id'];
+		$user_data = GetUserData($unique_id);
+
+		if (empty($user_data['email']) || empty($user_data['postal_code'])) {
+			continue;
+		}
+
+		$user_data['email'] = strtolower(trim($user_data['email']));
+		$user_data['postal_code'] = trim($user_data['postal_code']);
+		$user_data['date'] = $row['LastUpdated'];
+		$user_data['status'] = $row['status'];
+
+		$email = $user_data['email'];
+		$postal = $user_data['postal_code'];
+
+		// --- Check email uniqueness ---
+		if (!isset($latestPerEmail[$email]) || strtotime($row['LastUpdated']) > strtotime($latestPerEmail[$email]['date'])) {
+			$latestPerEmail[$email] = $user_data;
+		}
+
+		// --- Check postal code uniqueness ---
+		if (!isset($latestPerPostal[$postal]) || strtotime($row['LastUpdated']) > strtotime($latestPerPostal[$postal]['date'])) {
+			$latestPerPostal[$postal] = $user_data;
+		}
+	}
+
+	// Merge email-unique and postal-unique sets
+	$latestCombined = array_merge($latestPerEmail, $latestPerPostal);
+
+	// Remove duplicates (if the same record appears in both)
+	$latestCombined = array_values(array_unique($latestCombined, SORT_REGULAR));
+
+	// Sort by date descending
+	usort($latestCombined, function ($a, $b) {
+		return strtotime($b['date']) <=> strtotime($a['date']);
+	});
+
+	// Apply limit
+	$users = array_slice($latestCombined, 0, $limit);
+
 
 	// 5. Output CSV
 	$output = fopen('php://output', 'w');
 	$fields = ['date', 'first_name', 'last_name', 'email', 'phone', 'street_number', 'street_name', 'postal_code', 'ccd', 'status', 'selected_modem_plan_name', 'selected_Internet Plan_plan', 'selected_Internet Plan_plan_name'];
 	fputcsv($output, $fields);
-	foreach( $users as $user_data) {
+	foreach ($users as $user_data) {
 		$line = [];
-		if( $user_data['status'] >= 100 ) 
+		if ($user_data['status'] >= 100)
 			continue;
 		foreach ($fields as $f) {
 			if ($f == 'ccd') {
