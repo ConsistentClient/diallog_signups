@@ -54,6 +54,8 @@ if ($_SESSION["user"]) {
 			continue;
 		
 		$user_data['date'] = $row['LastUpdated'];
+		$user_data['status'] = $row['status'];
+
 		$user_data['email'] = strtolower(trim($user_data['email']));
 		$email = $user_data['email'];
 
