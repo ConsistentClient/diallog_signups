@@ -8,7 +8,6 @@ if ($_SESSION["user"]) {
 
 	$mysqli = connect_db();
 
-
 	// Get the parameters from the query string
 	$start = $_GET['start'] ?? null;
 	$end   = $_GET['end']   ?? null;
@@ -25,22 +24,21 @@ if ($_SESSION["user"]) {
 	$q      = $_GET['q']     ?? '';
 	$status = $_GET['status'] ?? '';
 	$from   = $_GET['from']  ?? '';
-
+	$limit = 10000;
 
 	// 4. CSV headers
 	header('Content-Type: text/csv; charset=utf-8');
 	header('Content-Disposition: attachment; filename="export.csv"');
-
-	
 
 	// 3. Build query dynamically
 	$stmt = $mysqli->prepare("
     SELECT s.*, s.LastUpdated
     FROM signup s
     WHERE s.LastUpdated BETWEEN ? AND ?
-      AND s.status < 100
-    LIMIT 10000
+    LIMIT $limit
 ");
+//      AND s.status < 100
+
 	$stmt->bind_param("ss", $start, $end);
 	$stmt->execute();
 	$result = $stmt->get_result();
@@ -65,7 +63,7 @@ if ($_SESSION["user"]) {
 		}
 	}
 
-	$users = array_slice($latestPerEmail, 0, 1000);
+	$users = array_slice($latestPerEmail, 0, $limit);
 
 	// 5. Output CSV
 	$output = fopen('php://output', 'w');
@@ -73,6 +71,8 @@ if ($_SESSION["user"]) {
 	fputcsv($output, $fields);
 	foreach( $users as $user_data) {
 		$line = [];
+		if( $user_data['status'] >= 100 ) 
+			continue;
 		foreach ($fields as $f) {
 			if ($f == 'ccd') {
 				if (isset($user_data[$f])) {
