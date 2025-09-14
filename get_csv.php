@@ -98,6 +98,7 @@ if ($_SESSION["user"]) {
 			$latestPerEmail[$email] = $user_data;
 		}
 
+		/*
 		// --- Enforce uniqueness by postal code only if postal is not empty ---
 		if ($postal !== '') {
 			if ( !isset($latestPerPostal[$postal]) //||
@@ -108,6 +109,7 @@ if ($_SESSION["user"]) {
 				$latestPerPostal[$postal] = $user_data;
 			}
 		}
+			*/
 	}
 
 	// Merge results
@@ -130,8 +132,8 @@ if ($_SESSION["user"]) {
 	fputcsv($output, $fields);
 	foreach ($users as $user_data) {
 		$line = [];
-		if ($user_data['status'] >= 100)
-			continue;
+		//if ($user_data['status'] >= 100)
+		//	continue;
 		foreach ($fields as $f) {
 			if ($f == 'ccd') {
 				if (isset($user_data[$f])) {
