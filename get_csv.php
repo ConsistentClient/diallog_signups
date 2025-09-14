@@ -90,19 +90,21 @@ if ($_SESSION["user"]) {
 		$postal = $user_data['postal_code'];
 
 		// --- Always enforce uniqueness by email ---
-		if (
-			!isset($latestPerEmail[$email]) ||
-			strtotime($row['LastUpdated']) > strtotime($latestPerEmail[$email]['date'])
+		if ( !isset($latestPerEmail[$email])
+			//strtotime($row['LastUpdated']) > strtotime($latestPerEmail[$email]['date'])
 		) {
+			$latestPerEmail[$email] = $user_data;
+		} else if( $latestPerEmail[$email]['status'] < $user_data['status'] )	{
 			$latestPerEmail[$email] = $user_data;
 		}
 
 		// --- Enforce uniqueness by postal code only if postal is not empty ---
 		if ($postal !== '') {
-			if (
-				!isset($latestPerPostal[$postal]) ||
-				strtotime($row['LastUpdated']) > strtotime($latestPerPostal[$postal]['date'])
+			if ( !isset($latestPerPostal[$postal]) //||
+				//strtotime($row['LastUpdated']) > strtotime($latestPerPostal[$postal]['date'])
 			) {
+				$latestPerPostal[$postal] = $user_data;
+			} else if( $latestPerPostal[$email]['status'] < $user_data['status']  ){
 				$latestPerPostal[$postal] = $user_data;
 			}
 		}
