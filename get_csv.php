@@ -132,8 +132,8 @@ if ($_SESSION["user"]) {
 	fputcsv($output, $fields);
 	foreach ($users as $user_data) {
 		$line = [];
-		//if ($user_data['status'] >= 100)
-		//	continue;
+		if ($user_data['status'] >= 100)
+			continue;
 		foreach ($fields as $f) {
 			if ($f == 'ccd') {
 				if (isset($user_data[$f])) {
